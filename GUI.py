@@ -5,6 +5,7 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationTool
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import math
+import numpy as np
 
 
 class Application(Tk):
@@ -39,9 +40,9 @@ class Application(Tk):
         Label(self.inputs_frame, text="Lens' diameter:", font=("Arial", 10)).grid(row=0, column=0, sticky=SW)
         Label(self.inputs_frame, text="Feed's HPBW:", font=("Arial", 10)).grid(row=1, column=0, sticky=NW)
         Label(self.inputs_frame, text="Frequency:", font=("Arial", 10)).grid(row=2, column=0, sticky=NW)
-        self.diameter = StringVar(self)
-        self.feed_hpbw = StringVar(self)
-        self.frequency = StringVar(self)
+        self.diameter = StringVar(self, value="1")
+        self.feed_hpbw = StringVar(self, value="60")
+        self.frequency = StringVar(self, value="10000000000")
         Entry(self.inputs_frame, width=15, textvariable=self.diameter, font=("Arial", 10)).grid(row=0, column=1, sticky=S)
         Entry(self.inputs_frame, width=15, textvariable=self.feed_hpbw, font=("Arial", 10)).grid(row=1, column=1, sticky=N)
         Entry(self.inputs_frame, width=15, textvariable=self.frequency, font=("Arial", 10)).grid(row=2, column=1, sticky=N)
@@ -66,7 +67,7 @@ class Application(Tk):
         self.eff_canvas = FigureCanvasTkAgg(self.eff_figure, master=self.efficiency_frame)
         self.eff_canvas.get_tk_widget().grid(row=0, column=0, pady=10)
         self.focal_lenght = DoubleVar(self)
-        self.eff_scale = Scale(self.efficiency_frame, orient=HORIZONTAL, variable=self.focal_lenght, resolution=0.01, from_=0, to=10)
+        self.eff_scale = Scale(self.efficiency_frame, orient=HORIZONTAL, variable=self.focal_lenght, resolution=0.01, from_=0.01, to=10)
         self.eff_scale.grid(row=1, column=0, sticky=EW)
 
     def open(self):
@@ -82,8 +83,8 @@ class Application(Tk):
             n = efficiencies.get_patern(hpbw)
             self.focal_lenght.set(0.5*d)
             self.eff_scale.configure(to=d*10)
-            # Draw lens radii
-            self.__draw_lens(d, f)
+            self.__draw_lens(d, f)  # Draw lens radii
+            self.__draw_efficiency(d, n)  # Draw efficiency plot
         except ValueError:
             self.warning_label.configure(text="Invalid parameters")
 
@@ -115,7 +116,15 @@ class Application(Tk):
         else:
             raise(ValueError)
 
-    def __draw_efficiency(self, )
+    def __draw_efficiency(self, d: float, n:int):
+        eff = np.zeros(int(d*1000)-1)
+        fl = np.zeros(int(d*1000)-1)
+        for i in range(0, int(d*1000)-1):
+            fl[i] = (i + 1) * 0.01
+            eff[i] =  efficiencies.illumination_numerical(n, d, fl[i]) * efficiencies.spillover(n, d, fl[i]) * efficiencies.phase(2) * efficiencies.blockage(self.radii, d)
+        self.eff_plot.clear()
+        self.eff_plot.plot(fl, eff)
+        self.eff_canvas.draw()
 
     def __quit(self):
         """Forces the mainloop to exit"""

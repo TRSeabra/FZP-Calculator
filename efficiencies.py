@@ -1,5 +1,6 @@
-import numpy
+import numpy as np
 import math
+from scipy.integrate import quad
 
 def spillover(n: int, d: float, f: float) -> float:
     """Computes the spillover efficiency"""
@@ -12,13 +13,31 @@ def phase(p: int) -> float:
     return math.pow(math.sin(delta/2)/(delta/2), 2)
 
 def illumination(n: int, d: float, f: float) -> float:
-    """Computes the illumination efficiency"""
+    """Computes the illumination efficiency """
+    psi0 = math.atan(d / (2 * f))
+    numerator = (1 - math.pow(math.cos(psi0), (n / 2) + 2)) / ((n / 2) + 2)
+    denominator = (1 - math.pow(math.cos(psi0), n + 1)) / (2 * (n + 1))
+    return math.pow(numerator, 2) / denominator
+
+def illumination_numerical(n: int, d: float, f:float) -> float:
     psi0 = math.atan(d/(2*f))
-    numerator1 = 2 - 2*math.pow(math.cos(psi0), n/2 + 2)
-    denominator1 = n + 4
-    numerator2 = 1 - math.pow(math.cos(psi0), n + 1)
-    denominator2 = n + 1
-    return math.pow(numerator1/denominator1, 2)/(numerator2/denominator2)
+    def E(theta):
+        return math.sqrt(2 * (n + 1)) * (math.cos(theta) ** (n / 2))
+    numerator_integral, _ = quad(lambda theta: E(theta) * math.sin(theta), 0, psi0)
+    denominator_integral, _ = quad(lambda theta: (E(theta) ** 2) * math.sin(theta), 0, psi0)
+    return (numerator_integral ** 2) / (denominator_integral * (1 - math.cos(psi0)))
+
+def blockage(radii: list[float], d) -> float:
+    """Computes the blockage efficiency"""
+    total_area = math.pi * math.pow(d/2, 2)
+    covered_area = 0
+    for i in range(len(radii)-1):
+        inner_radius = radii[i]
+        outer_radius = radii[i+1]
+        # Only consider even-numbered zones
+        if i % 2 == 0:
+            covered_area += math.pi*((outer_radius**2) - (inner_radius**2))
+    return covered_area/total_area
 
 def get_patern(feed_hpbw: float) -> int:
     """Returns the value n that better approximates the feed's gain profile by 2(n+1)cos(theta)^n"""
