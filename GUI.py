@@ -24,6 +24,7 @@ class Application(Tk):
         super().__init__(screenName, baseName, className, useTk, sync, use)
         self.protocol('WM_DELETE_WINDOW', self.__quit)  # Necessary when embedding matplotlib in tkinter
         self.title("FZP Calculator")
+        self.resizable(False, False)
 
         self.radii = list()
 
@@ -32,7 +33,7 @@ class Application(Tk):
         self.inputs_frame = Frame(self)
         self.inputs_frame.grid(row=0, column=0, pady=10, padx=10)
         self.lens_frame = Frame(self)
-        self.lens_frame.grid(row=0, column=1, pady=10, padx=10)
+        self.lens_frame.grid(row=0, column=1, pady=10, padx=10, sticky=E)
         self.efficiency_frame = Frame(self)
         self.efficiency_frame.grid(row=1, column=0, columnspan=2, pady=10, padx=10)
 
@@ -51,29 +52,37 @@ class Application(Tk):
         Label(self.inputs_frame, text="Hz", font=("Arial", 10)).grid(row=2, column=2, sticky=NW)
         self.warning_label = Label(self.inputs_frame, font=("Arial", 10), fg="red")
         self.warning_label.grid(row=4, column=0, columnspan=3, pady=10)
-        Button(self.inputs_frame, text="Calculate Radii", font=("Arial", 12), width=15, height=3, 
-               command=self.__get_input).grid(row=5, column=0, columnspan=3, pady=20)
+        self.input_button = Button(self.inputs_frame, text="Get input", font=("Arial", 12), width=15, height=3, 
+                                   command=self.__get_input)
+        self.input_button.grid(row=5, column=0, columnspan=3, pady=20)
 
         # Populating the lens frame
-        self.lens_figure = Figure(figsize=(4, 3), dpi=100)
+        self.lens_figure = Figure(figsize=(4, 4), dpi=100)
+        self.lens_figure.subplots_adjust(left=0.01, right=0.99, top=0.9, bottom=0.15)
         self.lens_plot = self.lens_figure.add_subplot()
         self.lens_plot.set_aspect("equal")
         self.lens_canvas = FigureCanvasTkAgg(self.lens_figure, master=self.lens_frame)
         self.lens_canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10)
+        self.lens_canvas.get_tk_widget().configure(highlightthickness=2, highlightbackground="black")
 
         # Populating the efficiency frame
         self.eff_figure = Figure(figsize=(10, 2.5), dpi=100)
+        self.eff_figure.subplots_adjust(left=0.075, right=0.98, top=0.9, bottom=0.2)
         self.eff_plot = self.eff_figure.add_subplot()
+        self.eff_plot.set_xlabel("Focal length [m]")
+        self.eff_plot.set_ylabel("aperture efficiency")
         self.eff_canvas = FigureCanvasTkAgg(self.eff_figure, master=self.efficiency_frame)
-        self.eff_canvas.get_tk_widget().grid(row=0, column=0, pady=10)
+        self.eff_canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10)
+        self.eff_canvas.get_tk_widget().configure(highlightthickness=2, highlightbackground="black")
         self.focal_lenght = DoubleVar(self)
-        self.eff_scale = Scale(self.efficiency_frame, orient=HORIZONTAL, variable=self.focal_lenght, resolution=0.01, from_=0.01, to=10)
-        self.eff_scale.grid(row=1, column=0, sticky=EW)
+        self.eff_scale = Scale(self.efficiency_frame, orient=HORIZONTAL, variable=self.focal_lenght, resolution=0.01, from_=0.01, to=10, 
+                               command=self.__get_input, state=DISABLED)
+        self.eff_scale.grid(row=1, column=0, sticky=EW, padx=20)
 
     def open(self):
         self.mainloop()
 
-    def __get_input(self):
+    def __get_input(self, event = None):
         try:
             d = float(self.diameter.get())
             hpbw = float(self.feed_hpbw.get())
@@ -81,10 +90,13 @@ class Application(Tk):
             if d <= 0 or hpbw <= 0 or hpbw >= 360:
                 raise(ValueError)
             n = efficiencies.get_patern(hpbw)
-            self.focal_lenght.set(0.5*d)
-            self.eff_scale.configure(to=d*10)
+            if event is None:
+                self.focal_lenght.set(0.5*d)
+                self.eff_scale.configure(to=d*5)
             self.__draw_lens(d, f)  # Draw lens radii
             self.__draw_efficiency(d, n)  # Draw efficiency plot
+            self.input_button.configure(state=DISABLED)
+            self.eff_scale.configure(state=NORMAL)
         except ValueError:
             self.warning_label.configure(text="Invalid parameters")
 
@@ -123,15 +135,18 @@ class Application(Tk):
             fl[i] = (i + 1) * 0.01
             eff[i] =  efficiencies.illumination_numerical(n, d, fl[i]) * efficiencies.spillover(n, d, fl[i]) * efficiencies.phase(2) * efficiencies.blockage(self.radii, d)
         self.eff_plot.clear()
+        self.eff_plot.set_xlabel("Focal length [m]")
+        self.eff_plot.set_ylabel("aperture efficiency")
         self.eff_plot.plot(fl, eff)
+        self.eff_plot.set_xlim([0, 10*d])
+        self.eff_plot.set_ylim([0, np.max(eff)*1.1])
+        self.eff_plot.plot(np.array([float(self.focal_lenght.get()), float(self.focal_lenght.get())]), np.array([0, np.max(eff)*1.1]), "red")
         self.eff_canvas.draw()
 
     def __quit(self):
         """Forces the mainloop to exit"""
         self.quit()
         self.destroy()
-
-
 
 
 if __name__ == "__main__":
