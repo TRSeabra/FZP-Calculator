@@ -38,23 +38,26 @@ class Application(Tk):
         self.efficiency_frame.grid(row=1, column=0, columnspan=2, pady=10, padx=10)
 
         # Populating the input frame
-        Label(self.inputs_frame, text="Lens' diameter:", font=("Arial", 10)).grid(row=0, column=0, sticky=SW)
-        Label(self.inputs_frame, text="Feed's HPBW:", font=("Arial", 10)).grid(row=1, column=0, sticky=NW)
-        Label(self.inputs_frame, text="Frequency:", font=("Arial", 10)).grid(row=2, column=0, sticky=NW)
+        self.parameters_frame = LabelFrame(self.inputs_frame, text="Parameters")
+        self.parameters_frame.grid(row=0, column=0)
+        Label(self.parameters_frame, text="Lens' diameter:", font=("Arial", 12)).grid(row=0, column=0, sticky=SW, padx=5, pady=5)
+        Label(self.parameters_frame, text="Feed's HPBW:", font=("Arial", 12)).grid(row=1, column=0, sticky=NW, padx=5, pady=5)
+        Label(self.parameters_frame, text="Frequency:", font=("Arial", 12)).grid(row=2, column=0, sticky=NW, padx=5, pady=5)
         self.diameter = StringVar(self, value="1")
         self.feed_hpbw = StringVar(self, value="60")
         self.frequency = StringVar(self, value="10000000000")
-        Entry(self.inputs_frame, width=15, textvariable=self.diameter, font=("Arial", 10)).grid(row=0, column=1, sticky=S)
-        Entry(self.inputs_frame, width=15, textvariable=self.feed_hpbw, font=("Arial", 10)).grid(row=1, column=1, sticky=N)
-        Entry(self.inputs_frame, width=15, textvariable=self.frequency, font=("Arial", 10)).grid(row=2, column=1, sticky=N)
-        Label(self.inputs_frame, text="m", font=("Arial", 10)).grid(row=0, column=2, sticky=SW)
-        Label(self.inputs_frame, text="º", font=("Arial", 10)).grid(row=1, column=2, sticky=NW)
-        Label(self.inputs_frame, text="Hz", font=("Arial", 10)).grid(row=2, column=2, sticky=NW)
+        Entry(self.parameters_frame, width=15, textvariable=self.diameter, font=("Arial", 12)).grid(row=0, column=1, sticky=S, padx=5, pady=5)
+        Entry(self.parameters_frame, width=15, textvariable=self.feed_hpbw, font=("Arial", 12)).grid(row=1, column=1, sticky=N, padx=5, pady=5)
+        Entry(self.parameters_frame, width=15, textvariable=self.frequency, font=("Arial", 12)).grid(row=2, column=1, sticky=N, padx=5, pady=5)
+        Label(self.parameters_frame, text="m", font=("Arial", 12)).grid(row=0, column=2, sticky=SW, padx=5, pady=5)
+        Label(self.parameters_frame, text="º", font=("Arial", 12)).grid(row=1, column=2, sticky=NW, padx=5, pady=5)
+        Label(self.parameters_frame, text="Hz", font=("Arial", 12)).grid(row=2, column=2, sticky=NW, padx=5, pady=5)
+
         self.warning_label = Label(self.inputs_frame, font=("Arial", 10), fg="red")
-        self.warning_label.grid(row=4, column=0, columnspan=3, pady=10)
-        self.input_button = Button(self.inputs_frame, text="Get input", font=("Arial", 12), width=15, height=3, 
+        self.warning_label.grid(row=1, column=0, columnspan=3, pady=10)
+        self.input_button = Button(self.inputs_frame, text="Read parameters", font=("Arial", 12), width=15, height=2, 
                                    command=self.__get_input)
-        self.input_button.grid(row=5, column=0, columnspan=3, pady=20)
+        self.input_button.grid(row=2, column=0, columnspan=3, pady=20)
 
         # Populating the lens frame
         self.lens_figure = Figure(figsize=(4, 4), dpi=100)
@@ -94,8 +97,7 @@ class Application(Tk):
                 self.focal_lenght.set(0.5*d)
                 self.eff_scale.configure(to=d*5)
             self.__draw_lens(d, f)  # Draw lens radii
-            self.__draw_efficiency(d, n)  # Draw efficiency plot
-            self.input_button.configure(state=DISABLED)
+            self.__draw_efficiency(d, n, f)  # Draw efficiency plot
             self.eff_scale.configure(state=NORMAL)
         except ValueError:
             self.warning_label.configure(text="Invalid parameters")
@@ -128,17 +130,17 @@ class Application(Tk):
         else:
             raise(ValueError)
 
-    def __draw_efficiency(self, d: float, n:int):
+    def __draw_efficiency(self, d: float, n:int, f:float):
         eff = np.zeros(int(d*1000)-1)
         fl = np.zeros(int(d*1000)-1)
         for i in range(0, int(d*1000)-1):
             fl[i] = (i + 1) * 0.01
-            eff[i] =  efficiencies.illumination_numerical(n, d, fl[i]) * efficiencies.spillover(n, d, fl[i]) * efficiencies.phase(2) * efficiencies.blockage(self.radii, d)
+            eff[i] =  efficiencies.illumination_numerical(n, d, fl[i]) * efficiencies.spillover(n, d, fl[i]) * efficiencies.phase(2) * efficiencies.blockage(fl[i], d, f)
         self.eff_plot.clear()
         self.eff_plot.set_xlabel("Focal length [m]")
         self.eff_plot.set_ylabel("aperture efficiency")
         self.eff_plot.plot(fl, eff)
-        self.eff_plot.set_xlim([0, 10*d])
+        self.eff_plot.set_xlim([0, 5*d])
         self.eff_plot.set_ylim([0, np.max(eff)*1.1])
         self.eff_plot.plot(np.array([float(self.focal_lenght.get()), float(self.focal_lenght.get())]), np.array([0, np.max(eff)*1.1]), "red")
         self.eff_canvas.draw()

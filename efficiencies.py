@@ -20,6 +20,7 @@ def illumination(n: int, d: float, f: float) -> float:
     return math.pow(numerator, 2) / denominator
 
 def illumination_numerical(n: int, d: float, f:float) -> float:
+    """Computes the illumination efficiency through numerical integration. Gives better results for small values of f"""
     psi0 = math.atan(d/(2*f))
     def E(theta):
         return math.sqrt(2 * (n + 1)) * (math.cos(theta) ** (n / 2))
@@ -27,10 +28,20 @@ def illumination_numerical(n: int, d: float, f:float) -> float:
     denominator_integral, _ = quad(lambda theta: (E(theta) ** 2) * math.sin(theta), 0, psi0)
     return (numerator_integral ** 2) / (denominator_integral * (1 - math.cos(psi0)))
 
-def blockage(radii: list[float], d) -> float:
+def blockage(f: float, d: float, freq) -> float:
     """Computes the blockage efficiency"""
     total_area = math.pi * math.pow(d/2, 2)
     covered_area = 0
+    radii = list()
+    m = 1
+    while True:
+        aux1 = m * 3e8 / freq
+        aux2 = f + (m * 3e8 / freq / 4)
+        r = math.sqrt(aux1*aux2)
+        if r > d/2:
+            break
+        radii.append(r)
+        m += 1
     for i in range(len(radii)-1):
         inner_radius = radii[i]
         outer_radius = radii[i+1]
