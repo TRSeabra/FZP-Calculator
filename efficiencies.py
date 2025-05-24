@@ -48,7 +48,7 @@ def blockage(f: float, d: float, freq) -> float:
         # Only consider even-numbered zones
         if i % 2 == 0:
             covered_area += math.pi*((outer_radius**2) - (inner_radius**2))
-    return covered_area/total_area
+    return (total_area - covered_area)/total_area
 
 def get_patern(feed_hpbw: float) -> int:
     """Returns the value n that better approximates the feed's gain profile by 2(n+1)cos(theta)^n"""
