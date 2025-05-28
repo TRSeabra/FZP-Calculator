@@ -6,8 +6,10 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import math
 import numpy as np
+from importlib import resources
 
-import fzp_calculator.efficiencies
+import fzp_calculator.efficiencies as efficiencies
+
 class Application(Tk):
 
     c = 3e8
@@ -29,6 +31,9 @@ class Application(Tk):
         self.protocol('WM_DELETE_WINDOW', self.__quit)  # Necessary when embedding matplotlib in tkinter
         self.title("FZP Calculator")
         self.resizable(False, False)
+        icon_path = resources.files("fzp_calculator.resources").joinpath("icon.png")
+        self.icon = PhotoImage(file=icon_path)
+        self.iconphoto(False, self.icon)
 
         self.radii = list()
 
