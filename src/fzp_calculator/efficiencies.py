@@ -13,13 +13,13 @@ def phase(p: int) -> float:
     return math.pow(math.sin(delta/2)/(delta/2), 2)
 
 def illumination(n: int, d: float, f: float) -> float:
-    """Computes the illumination efficiency """
+    """Computes the illumination efficiency"""
     psi0 = math.atan(d / (2 * f))
     numerator = (1 - math.pow(math.cos(psi0), (n / 2) + 2)) / ((n / 2) + 2)
     denominator = (1 - math.pow(math.cos(psi0), n + 1)) / (2 * (n + 1))
     return math.pow(numerator, 2) / denominator
 
-def illumination_numerical(n: int, d: float, f:float) -> float:
+def illumination_numerical(n: int, d: float, f: float) -> float:
     """Computes the illumination efficiency through numerical integration. Gives better results for small values of f"""
     psi0 = math.atan(d/(2*f))
     def E(theta):

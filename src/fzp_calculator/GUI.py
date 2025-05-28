@@ -1,6 +1,5 @@
 from tkinter import *
 from tkinter import ttk
-import efficiencies
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 import matplotlib.pyplot as plt
@@ -8,7 +7,7 @@ import matplotlib.patches as patches
 import math
 import numpy as np
 
-
+import fzp_calculator.efficiencies
 class Application(Tk):
 
     c = 3e8
@@ -115,7 +114,6 @@ class Application(Tk):
             d = float(self.diameter.get())
             hpbw = float(self.feed_hpbw.get())
             f = float(self.frequency.get()) * self.units[self.unit.get()]
-            print(f)
             if d <= 0 or hpbw <= 0 or hpbw >= 360:
                 raise(ValueError)
             n = efficiencies.get_patern(hpbw)
